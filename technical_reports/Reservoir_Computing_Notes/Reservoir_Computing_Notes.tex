@@ -1,0 +1,95 @@
+\documentclass[11pt]{article}
+    \usepackage[margin=0.6in]{geometry} 
+   \usepackage{amsmath,amsthm,amssymb,amsfonts}
+   \usepackage[bookmarks]{hyperref}
+   \usepackage{xcolor}
+   \usepackage{mathrsfs}
+   \usepackage[T1]{fontenc}
+   %\usepackage{libertine}
+   %\usepackage[italic]{mathastext}
+   \usepackage{bm}
+   
+   \newcommand{\N}{\mathbb{N}}
+   \newcommand{\Z}{\mathbb{Z}}
+   \newcommand{\Q}{\mathbb{Q}}
+   \newcommand{\R}{\mathbb{R}}
+   \newcommand{\C}{\mathbb{C}}
+   \newcommand{\pd}{\partial}
+   \newcommand{\maps}{\longrightarrow}
+   \newcommand{\el}{\frac{\pd{L}}{\pd{y}} - \frac{d}{dx}\frac{\pd{L}}{\pd{y'}} = 0}
+   \newcommand{\ep}{\varepsilon }
+   \newcommand{\Tor}{\textnormal{Tor}}
+   \newcommand{\Span}{\textnormal{Span}}
+   \newcommand{\Hom}{\textnormal{Hom}}
+   \newcommand{\Ker}{\textnormal{Ker}}
+   \newcommand{\Ima}{\textnormal{Im}}
+   \newcommand{\Zn}{\Z\big/n\Z}
+   \newcommand{\Zm}{\Z\big/m\Z}
+   \newcommand{\Zd}{\Z\big/d\Z}
+   \newcommand{\Zp}{\Z\big/p\Z}
+   \newcommand{\Mod}[1]{\ (\mathrm{mod}\ #1)}
+   
+   \theoremstyle{definition}
+   \newtheorem{theorem}{Theorem}[section]
+   \newtheorem{lemma}[theorem]{Lemma} 
+   \newtheorem{question}{Question}
+   \newtheorem{definition}[theorem]{Definition}
+   \newtheorem{case}{Case}
+   \newtheorem{ex}[theorem]{Example}
+   \newtheorem{claim}{Claim}
+   \theoremstyle{remark}
+   \newtheorem*{remark}{Remark}
+   \newtheorem*{recall}{Recall}
+   \newtheorem{cor}{Corollary}
+   
+   \newenvironment{problem}[2][Problem]{\begin{trivlist}
+   		\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+   %If you want to title your bold things something different just make another thing exactly like this but replace "problem" with the name of the thing you want, like theorem or lemma or whatever
+    
+\begin{document}
+    
+   %\renewcommand{\qedsymbol}{\filledbox}
+   %Good resources for looking up how to do stuff:
+   %Binary operators: http://www.access2science.com/latex/Binary.html
+   %General help: http://en.wikibooks.org/wiki/LaTeX/Mathematics
+   %Or just google stuff
+    
+   \title{Notes on Reservoir Computing}
+   \author{Navid Shamszadeh}
+   \maketitle
+   \tableofcontents
+   \newpage
+    \section{Liquid State Machines and Spiking Neural Networks}
+    A spiking neural network (SNN) processes information through the timing of discrete "spikes". Here, a spike at time $t_0$ is mathematically modeled as an impulse function $\delta(t - t_0)$. SNN's encode information through both the timing and rate of these impulses. This model of computation contrasts with traditional neural networks that transmit continuous, synchronous real-valued signals in discrete time.
+    \subsection{The Spike Train}
+    Before we get into how and when neurons fire spikes, we first give an overview of the mathematics of the "spike train" - a term used to describe the sequence of spikes flowing out of a given neuron. As stated before, a single spike at time $t_0$ can be modeled by the impulse $\delta(t-t_0)$ Given a neuron $i$, a spike train $s_i(t)$ is modeled by the summation of time-shifted impulses:
+    \begin{equation}\label{eqn:3}
+    s_i(t) = \sum_{k}\delta\left(t-t_i^{(k)}\right)
+    \end{equation}
+    Where $t_i^{(k)}$ is the firing time for spike $k$ from neuron $i$.
+    \subsubsection{Synaptic Trace}
+    Given a neuron $i$ and spike train \ref{eqn:3}, we need to "smooth" out the spikes before sending them off to their destinations (other neurons, or output layer). This is typically done using convolution with a single or double exponential kernel. The single exponential is as follows:
+    \begin{equation}\label{eqn:conv1}
+        r_i(t) = \left(\kappa\ast s_i\right)(t) = \int\kappa(t-\tau)s_i(\tau)d\tau = \sum_{k}\kappa\left(t-t_i^{(k)}\right), \ \ \ \ \kappa(t) = \frac{1}{\tau_s}e^{\frac{-t}{\tau_s}}
+    \end{equation}
+    Note that $\tau_s$ is the \textit{synaptic decay} time constant, separate from the RC membrane time constant $\tau_m$, and the dependent variable $t$ in $\kappa(t)$ represents time elapsed \textit{since the last spike}.
+     This makes SNN's more similar to how biological brains function than non-spiking networks. The biological brain consists of a network of interconnected neurons that fire spikes when their membrane voltages $V$ exceed a defined threshold value $V_{\theta}$. In neuroscience the spike is also called "action potential". Various mathematical models of the action potential have been studied and researched. A common model used in SNN's is the leaky integrate-and-fire model (LIF).
+     \subsection{Leaky Integrate-and-fire}
+     \begin{equation} \label{eq:1}
+         C\frac{dV}{dt} = -\frac{1}{R}\left(V(t) - V_{rest}\right) + I(t)
+     \end{equation}
+     Here $R$ and $C$ refer to the neuron membrane resistance and capacitance. $V(t)$ is the membrane potential, $V_{rest}$ is the resting state $V(t)$ returns to shortly after spiking, and $I(t)$ is the neuron's input current.
+     In practice, the normalized form is used. To obtain it, we divide \ref{eq:1} by $C$ and define the time constant $\tau_m := RC$:
+     \begin{equation}\label{eq:2}
+         \tau_m\frac{dV}{dt} = -\left( V(t) - V_{rest} \right) + RI(t) + I_{tonic}
+     \end{equation}
+    The leaking term is $-(V(t) - V_{rest})$ and drives $V$ toward resting potential with time constant $\tau_m$.
+    The input current $I(t)$ charges the membrane. When $V(t) \geq V_{\theta}$, an impulse is emitted from the neuron towards its connected nodes and $V$ is reset to its resting state. $I_{tonic}$ is an optional constant current applied to all neurons.
+    \subsection{Input Current}
+    Given a neuron $i$, the input current $I_i(t)$ consists of the external input \textit{and} any recurrent connection currents. We can also include the optional tonic current in our equation for $I_i(t)$ to simplify \ref{eq:2}.
+    \begin{equation}\label{eqn:I1}
+        I_i(t) = \sum_{j}W_{ij}r_j(t) + \sum_{m}W_{im}^{in} u_m(t) + I_{tonic}
+    \end{equation}
+    Where $W_ij$ is the weight matrix value at row $i$ column $j$ and $W^{in}_{im}$ is the input weight matrix value at row $i$ column $m$.
+\end{document}
+

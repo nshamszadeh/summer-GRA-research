@@ -2,6 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 """
+Small toy echo state network.
+Author: Navid Shamszadeh (teuscher.:Lab, Portland State University)
+Date: June 2026
+
+Does not do anything interesting (unless you think approximating trig functions is interesting)
 
 input signal: u(n) (N_in sized vector)
 output signal: y(n) (N_out sized vector)
@@ -60,10 +65,11 @@ if __name__ == "__main__":
     time = np.arange(0, 20, 0.1)
     noise = 0.1 * np.random.rand(len(time))
     sine_wave_target = np.sin(time)
+    tan_wave_target  = np.tan(time)
 
     # create ESN
-    size = 200
-    esn = EchoStateNetwork(input_size=1, reservoir_size=size, output_size=size, leaking_rate=0.01, spectral_rad=0.1)
+    size = 100
+    esn = EchoStateNetwork(input_size=1, reservoir_size=size, output_size=size, leaking_rate=0.5, spectral_rad=0.9)
     esn.train(noise[:,None], sine_wave_target[:,None])
     predictions = esn.predict(noise[:,None])
 
